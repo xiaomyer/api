@@ -10,23 +10,22 @@ cache = {}
 async def song(request):
     if not "artist" in request.query or not "song" in request.query:
         raise web.HTTPBadRequest(text="Missing parameters: \"artist\" and \"song\" are required")
-    song = cache.get((request.query.get("artist"), request.query.get("song"))) or await get_song_info(request.app["client"], request.query.get("artist"), request.query.get("song"))
+    song = cache.get((request.query.get("artist"), request.query.get("song"))) or await _get_song_info(request.app["client"], request.query.get("artist"), request.query.get("song"))
     if not song:
         raise web.HTTPBadRequest(text="Song not found")
+    song["lyrics"] = await _scrape_lyrics(request.app["client"], song.get("url"))
     cache[(request.query.get("artist"), request.query.get("song"))] = song
     return web.json_response(song)
 
-async def get_song_info(_client, artist, song):
+async def _get_song_info(_client, artist, song):
     async with _client.get("https://api.genius.com/search", params={"q": f"{artist} - {song}"}, headers={"Authorization": f"Bearer {config['GENIUS_CLIENT_ACCESS_TOKEN']}"}) as response:
         json = await response.json()
         if not bool(json.get("response", {}).get("hits")): return
         song = json.get("response", {}).get("hits")[0].get("result")
-        lyrics = await _scrape_lyrics(_client, song.get("url"))
         return {
             "artists": song.get("artist_names"),
             "title": song.get("title"),
-            "full_title": song.get("full_title"),
-            "lyrics": lyrics
+            "full_title": song.get("full_title")
         }
 
 async def _scrape_lyrics(_client, url):
