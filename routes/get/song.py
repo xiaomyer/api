@@ -5,15 +5,25 @@ from bs4 import BeautifulSoup
 from dotenv import dotenv_values
 
 config = dotenv_values()
-cache = {}
 
+def cache(function):
+    _cache = {}
+    async def inner(request):
+        if not "artist" in request.query or not "song" in request.query:
+            raise web.HTTPBadRequest(text="\"artist\" and \"song\" are required parameters that are missing")
+        if _cache.get((request.query.get("artist"), request.query.get("song"))) is not None:
+            return _cache.get((request.query.get("artist"), request.query.get("song")))
+        else:
+            response = await function(request)
+            _cache[(request.query.get("artist"), request.query.get("song"))] = response
+            return response
+    return inner
+
+@cache
 async def song(request):
-    if not "artist" in request.query or not "song" in request.query:
-        raise web.HTTPBadRequest(text="Missing parameters: \"artist\" and \"song\" are required")
-    song = cache.get((request.query.get("artist"), request.query.get("song"))) or await _get_song_info(request.app["client"], request.query.get("artist"), request.query.get("song"))
+    song = await _get_song_info(request.app["client"], request.query.get("artist"), request.query.get("song"))
     if not song:
-        raise web.HTTPBadRequest(text="Song not found")
-    cache[(request.query.get("artist"), request.query.get("song"))] = song
+        raise web.HTTPNotFound(text="Song not found")
     lyrics = await _scrape_lyrics(request.app["client"], song.get("url"))
     return web.json_response({
         "artists": song.get("artist_names"),

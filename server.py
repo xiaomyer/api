@@ -11,16 +11,16 @@ async def shutdown(app):
     await app["client"].close()
 
 @web.middleware
-async def wrapper(request, handler):
+async def wrapper(request, handler) -> web.Response:
     try:
         response = await handler(request)
         return web.json_response({"success": True, "status": response.status, "data": json.loads(response.text)})
     except web.HTTPException as exception:
-        return web.json_response({"success": False, "status": exception.status, "error": exception.text})
+        return web.json_response({"success": False, "status": exception.status, "reason": exception.reason, "message": exception.text})
 
-async def api():
-    app = web.Application(middlewares=[wrapper])
-    routes = [os.path.join(dp, f) for dp, _, fn in os.walk("routes") for f in fn]
+async def api() -> web.Application:
+    app: web.Application = web.Application(middlewares=[wrapper])
+    routes: list = [os.path.join(dp, f) for dp, _, fn in os.walk("routes") for f in fn]
     for route in routes:
         if "__pycache__" in route: continue
         module = importlib.import_module((route.replace("/", "."))[:-3])
