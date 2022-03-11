@@ -20,7 +20,7 @@ async def wrapper(request, handler) -> web.Response:
 
 async def api() -> web.Application:
     app: web.Application = web.Application(middlewares=[wrapper])
-    routes: list = [os.path.join(dp, f) for dp, _, fn in os.walk("routes") for f in fn]
+    routes: list[str] = [os.path.join(dp, f) for dp, _, fn in os.walk("routes") for f in fn]
     for route in routes:
         if "__pycache__" in route: continue
         module = importlib.import_module((route.replace("/", "."))[:-3])

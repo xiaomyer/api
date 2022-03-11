@@ -39,7 +39,7 @@ async def _get_song_info(_client, artist, song) -> dict:
         song: dict = json.get("response", {}).get("hits")[0].get("result")
         return song
 
-async def _scrape_lyrics(_client, url) -> list:
+async def _scrape_lyrics(_client, url) -> list[str]:
     async with _client.get(url) as response:
         html: BeautifulSoup = BeautifulSoup(await response.text(), "html.parser")
         lyrics: list = list(itertools.chain.from_iterable(list(tag.stripped_strings) for tag in html.find_all(attrs={"data-lyrics-container": "true"})))
