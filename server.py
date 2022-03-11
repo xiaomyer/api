@@ -4,16 +4,16 @@ import os
 
 from aiohttp import web, ClientSession
 
-async def startup(app):
+async def startup(app: web.Application):
     app["client"] = ClientSession()
 
-async def shutdown(app):
+async def shutdown(app: web.Application):
     await app["client"].close()
 
 @web.middleware
 async def wrapper(request, handler) -> web.Response:
     try:
-        response = await handler(request)
+        response: web.Response = await handler(request)
         return web.json_response({"success": True, "status": response.status, "data": json.loads(response.text)})
     except web.HTTPException as exception:
         return web.json_response({"success": False, "status": exception.status, "reason": exception.reason, "message": exception.text})
