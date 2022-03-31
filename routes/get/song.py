@@ -1,12 +1,14 @@
+from ast import Call
 import itertools
 
 from aiohttp import web
 from bs4 import BeautifulSoup
 from dotenv import dotenv_values
+from typing import Awaitable, Callable, Coroutine
 
 config = dotenv_values()
 
-def cache(function: function) -> function:
+def cache(function: Callable[[web.Request], Awaitable[web.Response]]) -> Callable[[web.Request], Awaitable[web.Response]]:
     _cache = {}
     async def inner(request: web.Request):
         if not "artist" in request.query or not "song" in request.query:
@@ -14,7 +16,7 @@ def cache(function: function) -> function:
         if _cache.get((request.query.get("artist"), request.query.get("song"))) is not None:
             return _cache.get((request.query.get("artist"), request.query.get("song")))
         else:
-            response: web.Response = await function(request)
+            response = await function(request)
             _cache[(request.query.get("artist"), request.query.get("song"))] = response
             return response
     return inner
