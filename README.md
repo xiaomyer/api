@@ -1,2 +1,2 @@
 # api
-Private API
+(Not so) Private API
